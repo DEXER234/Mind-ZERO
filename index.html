@@ -1,0 +1,260 @@
+<html>
+  <head>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
+    <link
+      rel="stylesheet"
+      as="style"
+      onload="this.rel='stylesheet'"
+      href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900"
+    />
+    <title>My File Manager</title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      class="relative flex min-h-screen flex-col bg-[#111418] dark group/design-root overflow-x-hidden"
+      style="font-family: Inter, 'Noto Sans', sans-serif"
+    >
+      <div class="layout-container flex flex-col h-full grow">
+        <header
+          class="flex flex-col sm:flex-row items-start sm:items-center justify-between whitespace-nowrap border-b border-solid border-b-[#283039] px-4 sm:px-10 py-3 gap-2 relative"
+        >
+          <div class="flex items-center gap-4 text-white">
+            <div class="size-4">
+              <svg
+                viewBox="0 0 48 48"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M24 45.8096C19.6865 45.8096 15.4698 44.5305 11.8832 42.134C8.29667 39.7376 5.50128 36.3314 3.85056 32.3462C2.19985 28.361 1.76794 23.9758 2.60947 19.7452C3.451 15.5145 5.52816 11.6284 8.57829 8.5783C11.6284 5.52817 15.5145 3.45101 19.7452 2.60948C23.9758 1.76795 28.361 2.19986 32.3462 3.85057C36.3314 5.50129 39.7376 8.29668 42.134 11.8833C44.5305 15.4698 45.8096 19.6865 45.8096 24L24 24L24 45.8096Z"
+                  fill="currentColor"
+                ></path>
+              </svg>
+            </div>
+            <h2
+              class="text-white text-lg font-bold leading-tight tracking-[-0.015em]"
+            >
+              MindZero
+            </h2>
+          </div>
+          <!-- Hamburger for mobile -->
+          <button id="mobile-menu-btn" class="sm:hidden absolute right-4 top-4 text-white focus:outline" aria-label="Open menu">
+            <i class="fas fa-bars text-2xl"></i>
+          </button>
+          <!-- Desktop Nav/Profile -->
+          <div id="desktop-nav" class="hidden sm:flex flex-col sm:flex-row flex-1 justify-end gap-4 sm:gap-8 w-full sm:w-auto">
+            <div class="flex items-center gap-4 sm:gap-9">
+              <a class="text-white text-sm font-medium leading-normal" href="#">Home</a>
+              <button id="create-group-btn" title="Create Group" class="group bg-gradient-to-r from-[#06d6a0] to-[#38bdf8] hover:from-[#38bdf8] hover:to-[#06d6a0] text-black rounded-full px-2 py-1 text-sm font-bold shadow-md transition flex items-center justify-center relative">
+                <i class="fas fa-users text-base mr-1"></i>
+                <span class="font-semibold">Create Group</span>
+              </button>
+              <button id="join-group-btn" title="Join Group" class="group bg-gradient-to-r from-[#4f8cff] to-[#a78bfa] hover:from-[#a78bfa] hover:to-[#4f8cff] text-black rounded-full px-2 py-1 text-sm font-bold shadow-md transition flex items-center justify-center relative">
+                <i class="fas fa-user-plus text-base mr-1"></i>
+                <span class="font-semibold">Join Group</span>
+              </button>
+            </div>
+            <!-- Profile Section -->
+            <div class="flex items-center gap-3 mt-2 sm:mt-0">
+              <div class="flex items-center gap-3 bg-[#283039] rounded-lg px-3 py-2">
+                <input type="file" id="avatar-input" accept="image/*" class="hidden" />
+                <div id="avatar-preview" class="w-8 h-8 rounded-full bg-gradient-to-r from-[#4f8cff] to-[#06d6a0] flex items-center justify-center cursor-pointer bg-cover bg-center">
+                  <i id="avatar-icon" class="fas fa-user text-white text-sm"></i>
+                </div>
+                <div class="block">
+                  <p id="user-name" class="text-white text-sm font-medium cursor-pointer hover:text-[#4f8cff]">Debanjan Halder</p>
+                  <p id="user-info" class="text-[#9cabba] text-xs cursor-pointer hover:text-white">CSE - 7TH TMSL</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Mobile Nav/Profile Dropdown -->
+          <div id="mobile-nav" class="sm:hidden hidden absolute top-full left-0 w-full bg-[#181c23] border-b border-[#283039] z-50 p-4 animate-fade-in">
+            <div class="flex flex-col gap-4">
+              <a class="text-white text-sm font-medium leading-normal" href="#">Home</a>
+              <div class="flex gap-2 flex-col">
+                <button id="create-group-btn-mobile" title="Create Group" class="group bg-gradient-to-r from-[#06d6a0] to-[#38bdf8] hover:from-[#38bdf8] hover:to-[#06d6a0] text-black rounded-full px-2 py-1 text-sm font-bold shadow-md transition flex items-center justify-center relative w-full">
+                  <i class="fas fa-users text-base mr-1"></i>
+                  <span class="font-semibold">Create Group</span>
+                </button>
+                <button id="join-group-btn-mobile" title="Join Group" class="group bg-gradient-to-r from-[#4f8cff] to-[#a78bfa] hover:from-[#a78bfa] hover:to-[#4f8cff] text-black rounded-full px-2 py-1 text-sm font-bold shadow-md transition flex items-center justify-center relative w-full">
+                  <i class="fas fa-user-plus text-base mr-1"></i>
+                  <span class="font-semibold">Join Group</span>
+                </button>
+              </div>
+              <div class="flex items-center gap-3 bg-[#283039] rounded-lg px-3 py-2">
+                <input type="file" id="avatar-input-mobile" accept="image/*" class="hidden" />
+                <div id="avatar-preview-mobile" class="w-8 h-8 rounded-full bg-gradient-to-r from-[#4f8cff] to-[#06d6a0] flex items-center justify-center cursor-pointer bg-cover bg-center">
+                  <i id="avatar-icon-mobile" class="fas fa-user text-white text-sm"></i>
+                </div>
+                <div class="block">
+                  <p id="user-name-mobile" class="text-white text-sm font-medium cursor-pointer hover:text-[#4f8cff]">Debanjan Halder</p>
+                  <p id="user-info-mobile" class="text-[#9cabba] text-xs cursor-pointer hover:text-white">CSE - 7TH TMSL</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+        <div class="gap-1 px-2 sm:px-6 flex flex-col md:flex-row flex-1 justify-center py-3 md:py-5 w-full">
+          <!-- Sidebar: Project Files -->
+          <div class="layout-content-container flex flex-col w-full md:w-[500px] mb-4 md:mb-0">
+            <h2 class="text-white text-[20px] sm:text-[22px] font-bold leading-tight tracking-[-0.015em] px-2 sm:px-4 pb-3 pt-5">My Files</h2>
+            <div class="px-2 sm:px-4 pb-2">
+              <input id="file-search" type="text" placeholder="Search files..." class="w-full rounded-md border border-[#283039] bg-[#181c23] text-white px-3 py-2 focus:outline-none focus:border-[#4f8cff] placeholder:text-[#9cabba]" />
+            </div>
+            <div id="files-container" class="flex flex-col gap-1 overflow-y-auto max-h-[40vh] sm:max-h-[70vh] px-1">
+              <!-- Files will be dynamically inserted here -->
+              <div id="empty-state" class="hidden flex flex-col items-center justify-center py-8 text-[#9cabba]">
+                <svg width="64" height="64" fill="none" viewBox="0 0 24 24"><path fill="#4f8cff" d="M12 2a2 2 0 0 1 2 2v1h4a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-4v1a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-1H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4V2a2 2 0 0 1 2-2Z"/></svg>
+                <div class="mt-4 text-lg font-semibold">No files uploaded yet!</div>
+                <div class="text-sm">Drag and drop files or use the upload button.</div>
+              </div>
+            </div>
+            <div class="flex px-2 sm:px-4 py-3 justify-start">
+              <!-- Upload File -->
+              <button id="upload-btn" class="bg-gradient-to-r from-[#4f8cff] via-[#38bdf8] to-[#06d6a0] hover:from-[#2563eb] hover:to-[#06d6a0] text-black rounded-full h-10 px-4 gap-2 pl-4 text-sm font-bold shadow-md transition w-full sm:w-auto flex items-center justify-center">
+                <div class="text-white" data-icon="Upload" data-size="20px" data-weight="regular">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
+                    <path d="M240,136v64a16,16,0,0,1-16,16H32a16,16,0,0,1-16-16V136a16,16,0,0,1,16-16H80a8,8,0,0,1,0,16H32v64H224V136H176a8,8,0,0,1,0-16h48A16,16,0,0,1,240,136ZM85.66,77.66,120,43.31V128a8,8,0,0,0,16,0V43.31l34.34,34.35a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,85.66,77.66ZM200,168a12,12,0,1,0-12,12A12,12,0,0,0,200,168Z"></path>
+                  </svg>
+                </div>
+                <span class="truncate">Upload File</span>
+              </button>
+              <input type="file" id="file-input" multiple class="hidden" />
+            </div>
+            <div id="group-list-container" class="px-2 sm:px-4 pb-2 mt-4">
+              <h3 class="text-white text-base font-bold mb-2">My Groups</h3>
+              <div id="group-list" class="flex flex-col gap-2"></div>
+            </div>
+            <div id="group-files-section" class="px-2 sm:px-4 pb-2 mt-4 hidden">
+              <h3 class="text-white text-base font-bold mb-2">Group Files</h3>
+              <form id="group-file-upload-form" class="flex gap-2 mb-3">
+                <input id="group-file-input" type="file" class="text-white bg-[#232a36] rounded px-2 py-1" />
+                <button type="submit" class="bg-gradient-to-r from-[#4f8cff] to-[#06d6a0] text-black rounded px-3 py-1 font-bold">Upload</button>
+              </form>
+              <div id="group-files-list" class="flex flex-col gap-2"></div>
+              <div id="group-files-message" class="text-[#9cabba] mt-2"></div>
+            </div>
+            <!-- Create Group Modal -->
+            <div id="create-group-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+              <div class="bg-[#181c23] rounded-lg p-6 w-full max-w-xs flex flex-col gap-4">
+                <h2 class="text-white text-lg font-bold">Create Group</h2>
+                <input id="create-group-name" type="text" placeholder="Group Name" class="rounded-md border border-[#283039] bg-[#232a36] text-white px-3 py-2 focus:outline-none focus:border-[#4f8cff] placeholder:text-[#9cabba]" />
+                <div class="flex gap-2 justify-end">
+                  <button id="create-group-cancel" class="px-4 py-2 rounded bg-[#283039] text-white">Cancel</button>
+                  <button id="create-group-confirm" class="px-4 py-2 rounded bg-gradient-to-r from-[#06d6a0] to-[#38bdf8] text-black font-bold">Create</button>
+                </div>
+                <div id="create-group-result" class="text-xs text-[#06d6a0] mt-2"></div>
+              </div>
+            </div>
+            <!-- Join Group Modal -->
+            <div id="join-group-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+              <div class="bg-[#181c23] rounded-lg p-6 w-full max-w-xs flex flex-col gap-4">
+                <h2 class="text-white text-lg font-bold">Join Group</h2>
+                <input id="join-group-code" type="text" placeholder="Group Code" class="rounded-md border border-[#283039] bg-[#232a36] text-white px-3 py-2 focus:outline-none focus:border-[#4f8cff] placeholder:text-[#9cabba]" />
+                <div class="flex gap-2 justify-end">
+                  <button id="join-group-cancel" class="px-4 py-2 rounded bg-[#283039] text-white">Cancel</button>
+                  <button id="join-group-confirm" class="px-4 py-2 rounded bg-gradient-to-r from-[#4f8cff] to-[#a78bfa] text-black font-bold">Join</button>
+                </div>
+                <div id="join-group-result" class="text-xs text-[#06d6a0] mt-2"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Main Content: Editor -->
+          <div class="layout-content-container flex flex-col w-full max-w-full md:max-w-[960px] flex-1">
+            <div class="flex flex-wrap justify-between gap-3 p-2 sm:p-4">
+              <p id="project-title" class="text-white tracking-light text-[22px] sm:text-[32px] font-bold leading-tight min-w-0">
+                My Personal File Manager
+              </p>
+              <div class="flex items-center gap-3">
+                <!-- Save -->
+                <button id="save-btn" disabled class="bg-gradient-to-r from-[#06d6a0] via-[#38bdf8] to-[#4f8cff] hover:from-[#06d6a0] hover:to-[#2563eb] text-black rounded-full px-4 py-2 font-bold shadow-md transition flex items-center gap-2">
+                  <i class="fas fa-save"></i> Save
+                </button>
+                <!-- Edit -->
+                <button id="edit-btn" disabled class="bg-gradient-to-r from-[#f472b6] to-[#be185d] hover:from-[#be185d] hover:to-[#f472b6] text-bl rounded-full px-4 py-2 font-bold shadow-md transition flex items-center gap-2">
+                  <i class="fas fa-edit"></i> Edit
+                  
+                </button>
+                <!-- Download -->
+                <button id="download-btn" disabled class="bg-gradient-to-r from-[#a78bfa] via-[#f472b6] to-[#fbbf24] hover:from-[#a78bfa] hover:to-[#f59e42] text-black rounded-full px-4 py-2 font-bold shadow-md transition flex items-center gap-2">
+                  <i class="fas fa-download"></i> Download
+                </button>
+              </div>
+            </div>
+            <div class="flex flex-col max-w-full md:max-w-[1000px] gap-4 px-2 sm:px-4 py-3">
+              <label class="flex flex-col w-full">
+                <p id="filename-display" class="text-white text-base font-medium leading-normal pb-2">
+                  Select a file to edit
+                </p>
+                <p id="file-mode-indicator" class="flex items-center gap-2 pb-2">
+                  <i class="fas fa-eye text-[#4f8cff]"></i>
+                  <span class="text-xs font-semibold text-[#4f8cff]">VIEW MODE</span>
+                </p>
+                <div class="h-[60vh]">
+                  <pre id="file-highlight" class="scrollbar-hide line-numbers rounded-lg bg-[#232a36] text-sm p-4 h-full overflow-y-auto whitespace-pre-wrap break-words mb-2" style="display:none;"><code class="language-none"></code></pre>
+                  <textarea id="file-editor" class="form-input w-full h-full resize-none overflow-y-auto rounded-lg text-white focus:outline-0 focus:ring-0 border border-[#3b4754] bg-[#1b2127] focus:border-[#3b4754] placeholder:text-[#9cabba] p-[15px] text-base font-normal leading-normal font-mono"></textarea>
+                </div>
+              </label>
+            </div>
+            <div class="px-2 sm:px-4 py-2 text-sm text-[#9cabba] flex flex-wrap gap-2">
+              <span id="last-modified">Last modified: Never</span>
+              <span id="modified-by" class="ml-4">By: -</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="w-full border-t border-[#283039] bg-[#181c23] px-4 py-8">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="flex items-center gap-3">
+            <div class="size-8 flex items-center justify-center rounded-full bg-[#232a36]">
+              <i class="fas fa-code-branch text-[#4f8cff] text-lg"></i>
+            </div>
+            <span class="text-white text-lg font-bold tracking-wide">MindZero</span>
+            <span class="text-[#9cabba] text-sm ml-2">&copy; 2025</span>
+          </div>
+          <div class="flex gap-6 items-center">
+            <a href="#" class="text-[#9cabba] hover:text-white text-sm transition">Privacy Policy</a>
+            <a href="#" class="text-[#9cabba] hover:text-white text-sm transition">Terms</a>
+            <a href="https://github.com/" target="_blank" class="text-[#9cabba] hover:text-white text-xl transition flex items-center gap-1" aria-label="GitHub">
+              <i class="fab fa-github"></i>
+            </a>
+            <a href="mailto:support@mindzero.com" class="text-[#9cabba] hover:text-white text-xl transition flex items-center gap-1" aria-label="Email">
+              <i class="fas fa-envelope"></i>
+            </a>
+          </div>
+        </div>
+      </footer>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+      <script src="admin.js"></script>
+    </div>
+  </body>
+</html>
