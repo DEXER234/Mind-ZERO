@@ -822,6 +822,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fetch and render files for selected group
     async function fetchAndRenderGroupFiles() {
         if (!selectedGroupCode) return;
+        // Fetch group info (members)
+        let groupInfo = null;
+        try {
+            const res = await fetch(`${API_BASE}/list?username=${encodeURIComponent(getUsername())}`);
+            const data = await res.json();
+            if (res.ok && data.groups) {
+                groupInfo = data.groups.find(g => g.code === selectedGroupCode);
+            }
+        } catch (e) {}
+        // Render group member info
+        const groupMembersDiv = document.getElementById('group-members-info');
+        if (groupMembersDiv && groupInfo) {
+            groupMembersDiv.innerHTML = `<span class='text-[#4f8cff] font-semibold'>Members (${groupInfo.members.length}):</span> <span class='text-[#9cabba] text-xs'>${groupInfo.members.map(m => `<span class='bg-[#232a36] rounded px-2 py-1 mr-1'>${m}</span>`).join('')}</span>`;
+        } else if (groupMembersDiv) {
+            groupMembersDiv.innerHTML = '';
+        }
         groupFilesList.innerHTML = '<div class="text-[#9cabba]">Loading...</div>';
         groupFilesMessage.textContent = '';
         try {
