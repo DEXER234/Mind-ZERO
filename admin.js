@@ -774,7 +774,39 @@ document.addEventListener('DOMContentLoaded', function() {
     const groupFilesMessage = document.getElementById('group-files-message');
     const groupFileUploadForm = document.getElementById('group-file-upload-form');
     const groupFileInput = document.getElementById('group-file-input');
+    const groupFileDrop = document.getElementById('group-file-drop');
+    const groupFileSelected = document.getElementById('group-file-selected');
+    const groupFileUploadFeedback = document.getElementById('group-file-upload-feedback');
     let selectedGroupCode = null;
+
+    // Drag-and-drop for file upload
+    if (groupFileDrop && groupFileInput) {
+        groupFileDrop.addEventListener('click', () => groupFileInput.click());
+        groupFileDrop.addEventListener('dragover', e => {
+            e.preventDefault();
+            groupFileDrop.classList.add('bg-[#181c23]');
+        });
+        groupFileDrop.addEventListener('dragleave', e => {
+            e.preventDefault();
+            groupFileDrop.classList.remove('bg-[#181c23]');
+        });
+        groupFileDrop.addEventListener('drop', e => {
+            e.preventDefault();
+            groupFileDrop.classList.remove('bg-[#181c23]');
+            if (e.dataTransfer.files.length) {
+                groupFileInput.files = e.dataTransfer.files;
+                showSelectedFileName();
+            }
+        });
+        groupFileInput.addEventListener('change', showSelectedFileName);
+        function showSelectedFileName() {
+            if (groupFileInput.files.length) {
+                groupFileSelected.textContent = groupFileInput.files[0].name;
+            } else {
+                groupFileSelected.textContent = '';
+            }
+        }
+    }
 
     // Show files section when a group is selected
     function selectGroup(code) {
@@ -805,8 +837,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     const ext = file.originalname.split('.').pop().toLowerCase();
                     if (["png","jpg","jpeg","gif","bmp","webp"].includes(ext)) {
                         preview = `<img src="${API_BASE}/${selectedGroupCode}/files/${file.filename}" alt="preview" class="max-h-32 max-w-xs rounded mb-2" />`;
-                    } else if (["txt","md","json","js","py","html","css"].includes(ext)) {
-                        preview = `<button class='show-preview-btn text-xs text-[#38bdf8] underline mb-2' data-filename='${file.filename}'>Show Preview</button><pre class='file-preview-content hidden bg-[#181c23] text-white rounded p-2 mb-2 text-xs overflow-x-auto'></pre>`;
+                    } else if (["pdf"].includes(ext)) {
+                        preview = `<button class='show-preview-btn bg-[#4f8cff] text-white rounded px-2 py-1 text-xs mb-2 w-fit' data-filename='${file.filename}'>Show Preview</button><div class='file-preview-content hidden mb-2'><embed src='${API_BASE}/${selectedGroupCode}/files/${file.filename}' type='application/pdf' width='100%' height='400px' class='rounded' /></div>`;
+                    } else if (["txt","md","json","js","py","html","css","csv","xml","log","conf","sh","bat","ini","yml","yaml","ts","c","cpp","java","php","rb","go","rs","pl","swift","kt","scala"].includes(ext)) {
+                        preview = `<button class='show-preview-btn bg-[#4f8cff] text-white rounded px-2 py-1 text-xs mb-2 w-fit' data-filename='${file.filename}'>Show Preview</button><pre class='file-preview-content hidden bg-[#181c23] text-white rounded p-2 mb-2 text-xs overflow-x-auto'></pre>`;
                     }
                     div.innerHTML = `
                         <div class='flex items-center justify-between'>
@@ -846,27 +880,29 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
                 });
-                // Preview listeners for text files
+                // Preview listeners for all previewable files
                 groupFilesList.querySelectorAll('.show-preview-btn').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
                         const filename = btn.getAttribute('data-filename');
-                        const pre = btn.nextElementSibling;
-                        if (pre.classList.contains('hidden')) {
-                            pre.textContent = 'Loading...';
-                            pre.classList.remove('hidden');
-                            try {
-                                const res = await fetch(`${API_BASE}/${selectedGroupCode}/files/${filename}`);
-                                if (res.ok) {
-                                    const text = await res.text();
-                                    pre.textContent = text.slice(0, 2000) + (text.length > 2000 ? '\n... (truncated)' : '');
-                                } else {
-                                    pre.textContent = 'Preview failed.';
+                        const previewContainer = btn.nextElementSibling;
+                        if (previewContainer.classList.contains('hidden')) {
+                            if (previewContainer.tagName === 'PRE') {
+                                previewContainer.textContent = 'Loading...';
+                                try {
+                                    const res = await fetch(`${API_BASE}/${selectedGroupCode}/files/${filename}`);
+                                    if (res.ok) {
+                                        const text = await res.text();
+                                        previewContainer.textContent = text.slice(0, 2000) + (text.length > 2000 ? '\n... (truncated)' : '');
+                                    } else {
+                                        previewContainer.textContent = 'Preview failed.';
+                                    }
+                                } catch (e) {
+                                    previewContainer.textContent = 'Network error.';
                                 }
-                            } catch (e) {
-                                pre.textContent = 'Network error.';
                             }
+                            previewContainer.classList.remove('hidden');
                         } else {
-                            pre.classList.add('hidden');
+                            previewContainer.classList.add('hidden');
                         }
                     });
                 });
@@ -887,7 +923,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 groupFilesMessage.textContent = 'Please select a file.';
                 return;
             }
-            groupFilesMessage.textContent = 'Uploading...';
+            groupFileUploadFeedback.textContent = 'Uploading...';
             const formData = new FormData();
             formData.append('file', file);
             formData.append('username', getUsername());
@@ -898,14 +934,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    groupFilesMessage.textContent = 'File uploaded!';
+                    groupFileUploadFeedback.textContent = 'File uploaded!';
                     groupFileInput.value = '';
+                    groupFileSelected.textContent = '';
                     fetchAndRenderGroupFiles();
                 } else {
-                    groupFilesMessage.textContent = data.error || 'Upload failed.';
+                    groupFileUploadFeedback.textContent = data.error || 'Upload failed.';
                 }
             } catch (e) {
-                groupFilesMessage.textContent = 'Network error.';
+                groupFileUploadFeedback.textContent = 'Network error.';
             }
         });
     }
