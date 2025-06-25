@@ -781,7 +781,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Drag-and-drop for file upload
     if (groupFileDrop && groupFileInput) {
-        groupFileDrop.addEventListener('click', () => groupFileInput.click());
         groupFileDrop.addEventListener('dragover', e => {
             e.preventDefault();
             groupFileDrop.classList.add('bg-[#181c23]');
@@ -858,9 +857,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else if (["txt","md","json","js","py","html","css","csv","xml","log","conf","sh","bat","ini","yml","yaml","ts","c","cpp","java","php","rb","go","rs","pl","swift","kt","scala"].includes(ext)) {
                         preview = `<button class='show-preview-btn bg-[#4f8cff] text-white rounded px-2 py-1 text-xs mb-2 w-fit' data-filename='${file.filename}'>Show Preview</button><pre class='file-preview-content hidden bg-[#181c23] text-white rounded p-2 mb-2 text-xs overflow-x-auto'></pre>`;
                     }
+                    // Format upload date/time
+                    let uploadDate = '';
+                    if (file.uploadDate) {
+                        const d = new Date(file.uploadDate);
+                        uploadDate = d.toLocaleString();
+                    }
                     div.innerHTML = `
                         <div class='flex items-center justify-between'>
-                            <span class="text-white font-normal">${file.originalname}</span>
+                            <div class="flex flex-col">
+                                <span class="text-white font-normal">${file.originalname}</span>
+                                <span class="text-xs text-[#9cabba] mt-1">Uploaded by <span class="font-semibold text-[#4f8cff]">${file.uploader || 'Unknown'}</span> on <span class="font-semibold">${uploadDate || ''}</span></span>
+                            </div>
                             <span class="text-[#9cabba] text-xs ml-2">${(file.size/1024).toFixed(1)} KB</span>
                             <div class='flex gap-2'>
                                 <button class="download-group-file-btn bg-[#38bdf8] hover:bg-[#06d6a0] text-black rounded px-2 py-1 text-xs" data-filename="${file.filename}">Download</button>
