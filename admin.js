@@ -628,7 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (joinGroupCancel) joinGroupCancel.onclick = () => closeModal(joinGroupModal);
 
     // API base
-    const API_BASE = 'http://localhost:3001/api/groups';
+    const API_BASE = 'https://mind-zero.onrender.com/api/groups';
 
     // Create Group
     if (createGroupConfirm) createGroupConfirm.onclick = async () => {
