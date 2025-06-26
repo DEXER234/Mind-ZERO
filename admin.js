@@ -1,3 +1,4 @@
+console.log('admin.js loaded - debug version');
 document.addEventListener('DOMContentLoaded', function() {
     // DOM elements
     const fileInput = document.getElementById('file-input');
@@ -833,7 +834,46 @@ document.addEventListener('DOMContentLoaded', function() {
         // Render group member info
         const groupMembersDiv = document.getElementById('group-members-info');
         if (groupMembersDiv && groupInfo) {
-            groupMembersDiv.innerHTML = `<span class='text-[#4f8cff] font-semibold'>Members (${groupInfo.members.length}):</span> <span class='text-[#9cabba] text-xs'>${groupInfo.members.map(m => `<span class='bg-[#232a36] rounded px-2 py-1 mr-1'>${m}</span>`).join('')}</span>`;
+            // The creator is the first member in the array
+            const creator = groupInfo.members[0];
+            const currentUser = getUsername();
+            groupMembersDiv.innerHTML = `<span class='text-[#4f8cff] font-semibold'>Members (${groupInfo.members.length}):</span> <span class='text-[#9cabba] text-xs'>${groupInfo.members.map(m => {
+                if (m === creator) {
+                    return `<span class='bg-[#232a36] rounded px-2 py-1 mr-1 flex items-center gap-1'>${m} <span class="ml-1 text-xs font-bold" style="color:#06d6a0;">admin</span></span>`;
+                } else {
+                    // Show kick button only if current user is admin
+                    let kickBtn = '';
+                    if (currentUser === creator) {
+                        kickBtn = `<button class='kick-member-btn ml-2 bg-[#e57373] hover:bg-red-500 text-white rounded px-2 py-0.5 text-xs' data-member='${m}'>Kick</button>`;
+                    }
+                    return `<span class='bg-[#232a36] rounded px-2 py-1 mr-1 flex items-center gap-1'>${m} <span class=\"ml-1 text-xs font-bold\" style=\"color:#4f8cff;\">team</span>${kickBtn}</span>`;
+                }
+            }).join('')}</span>`;
+            // Add event listeners for kick buttons
+            if (currentUser === creator) {
+                groupMembersDiv.querySelectorAll('.kick-member-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const member = btn.getAttribute('data-member');
+                        if (member && confirm(`Kick ${member} from the group?`)) {
+                            try {
+                                const res = await fetch(`${API_BASE}/kick`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ code: selectedGroupCode, member, requester: currentUser })
+                                });
+                                if (res.ok) {
+                                    fetchAndRenderGroupFiles();
+                                    showNotification(`${member} has been kicked out.`, 'success');
+                                } else {
+                                    showNotification('Failed to kick member.', 'error');
+                                }
+                            } catch (e) {
+                                showNotification('Network error.', 'error');
+                            }
+                        }
+                    });
+                });
+            }
         } else if (groupMembersDiv) {
             groupMembersDiv.innerHTML = '';
         }
@@ -857,17 +897,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else if (["txt","md","json","js","py","html","css","csv","xml","log","conf","sh","bat","ini","yml","yaml","ts","c","cpp","java","php","rb","go","rs","pl","swift","kt","scala"].includes(ext)) {
                         preview = `<button class='show-preview-btn bg-[#4f8cff] text-white rounded px-2 py-1 text-xs mb-2 w-fit' data-filename='${file.filename}'>Show Preview</button><pre class='file-preview-content hidden bg-[#181c23] text-white rounded p-2 mb-2 text-xs overflow-x-auto'></pre>`;
                     }
-                    // Format upload date/time
+                    // Format upload date/time (always show, fallback if missing)
                     let uploadDate = '';
                     if (file.uploadDate) {
                         const d = new Date(file.uploadDate);
                         uploadDate = d.toLocaleString();
+                    } else {
+                        uploadDate = '';
                     }
+                    // Comments section placeholder
+                    const commentsSectionId = `comments-section-${file.filename.replace(/[^a-zA-Z0-9]/g, '')}`;
                     div.innerHTML = `
                         <div class='flex items-center justify-between'>
                             <div class="flex flex-col">
                                 <span class="text-white font-normal">${file.originalname}</span>
-                                <span class="text-xs text-[#9cabba] mt-1">Uploaded by <span class="font-semibold text-[#4f8cff]">${file.uploader || 'Unknown'}</span> on <span class="font-semibold">${uploadDate || ''}</span></span>
+                                <span class="text-xs text-[#9cabba] mt-1">Uploaded by <span class="font-semibold text-[#4f8cff]">${file.uploader || 'Unknown'}</span> on <span class="font-semibold">${uploadDate}</span></span>
                             </div>
                             <span class="text-[#9cabba] text-xs ml-2">${(file.size/1024).toFixed(1)} KB</span>
                             <div class='flex gap-2'>
@@ -876,8 +920,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                         ${preview}
+                        <div id="${commentsSectionId}" class="mt-2 bg-[#181c23] rounded p-2"></div>
                     `;
                     groupFilesList.appendChild(div);
+                    // Render comments section
+                    renderCommentsSection(selectedGroupCode, file.filename, commentsSectionId);
                 });
                 // Download listeners
                 groupFilesList.querySelectorAll('.download-group-file-btn').forEach(btn => {
@@ -959,6 +1006,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await res.json();
                 if (res.ok) {
                     groupFileUploadFeedback.textContent = 'File uploaded!';
+                    // Save to My Files (personal)
+                    const file = groupFileInput.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(evt) {
+                            const content = evt.target.result;
+                            files.push({
+                                name: file.name,
+                                content: content,
+                                lastModified: new Date().toISOString(),
+                                modifiedBy: "You"
+                            });
+                            saveFilesToStorage();
+                            updateFileList();
+                        };
+                        reader.readAsText(file);
+                    }
                     groupFileInput.value = '';
                     groupFileSelected.textContent = '';
                     fetchAndRenderGroupFiles();
@@ -972,4 +1036,64 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // Deselect group if group list is empty or user leaves
     // (Handled in fetchAndRenderGroups)
+
+    // Render and handle comments for a file
+    async function renderCommentsSection(groupCode, filename, sectionId) {
+        const section = document.getElementById(sectionId);
+        if (!section) return;
+        section.innerHTML = '<div class="text-[#9cabba] text-xs">Loading comments...</div>';
+        try {
+            const res = await fetch(`${API_BASE}/${groupCode}/files/${filename}/comments`);
+            const data = await res.json();
+            if (res.ok) {
+                const comments = data.comments || [];
+                section.innerHTML = `
+                    <div class="mb-2 text-[#4f8cff] font-semibold text-xs">Notes / Comments</div>
+                    <div class="flex flex-col gap-1 mb-2">
+                        ${comments.length === 0 ? '<div class="text-[#9cabba] text-xs">No comments yet.</div>' : comments.map(c => `<div class='bg-[#232a36] rounded px-2 py-1 text-xs mb-1'><span class='font-bold text-[#38bdf8]'>${c.username}</span>: <span class='text-[#facc15]'>${c.text}</span> <span class='text-[#9cabba] ml-2'>${new Date(c.timestamp).toLocaleString()}</span></div>`).join('')}
+                    </div>
+                    <form class="add-comment-form flex gap-2 mt-1">
+                        <input type="text" class="comment-input flex-1 rounded bg-[#232a36] text-white px-2 py-1 text-xs" placeholder="Add a note or comment..." required />
+                        <button type="submit" class="bg-[#06d6a0] text-black rounded px-3 py-1 text-xs font-bold">Add</button>
+                    </form>
+                    <div class="add-comment-feedback text-xs mt-1"></div>
+                `;
+                // Add comment form logic
+                const form = section.querySelector('.add-comment-form');
+                const input = section.querySelector('.comment-input');
+                const feedback = section.querySelector('.add-comment-feedback');
+                if (form && input) {
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const text = input.value.trim();
+                        if (!text) return;
+                        form.querySelector('button').disabled = true;
+                        feedback.textContent = 'Adding...';
+                        try {
+                            const res = await fetch(`${API_BASE}/${groupCode}/files/${filename}/comments`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ username: getUsername(), text })
+                            });
+                            if (res.ok) {
+                                input.value = '';
+                                feedback.textContent = 'Comment added!';
+                                await renderCommentsSection(groupCode, filename, sectionId);
+                            } else {
+                                feedback.textContent = 'Failed to add comment.';
+                            }
+                        } catch (e) {
+                            feedback.textContent = 'Network error.';
+                        } finally {
+                            form.querySelector('button').disabled = false;
+                        }
+                    });
+                }
+            } else {
+                section.innerHTML = '<div class="text-[#e57373] text-xs">Failed to load comments.</div>';
+            }
+        } catch (e) {
+            section.innerHTML = '<div class="text-[#e57373] text-xs">Network error.</div>';
+        }
+    }
 });
