@@ -1,4 +1,3 @@
-console.log('admin.js loaded - debug version');
 document.addEventListener('DOMContentLoaded', function() {
     // DOM elements
     const fileInput = document.getElementById('file-input');
