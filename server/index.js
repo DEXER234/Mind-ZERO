@@ -16,6 +16,9 @@ let userGroups = {};
 // File metadata storage (in-memory for demo)
 let groupFiles = {};
 
+// In-memory comments per file: groupFilesComments[groupCode][filename] = [ { username, text, timestamp } ]
+let groupFilesComments = {};
+
 // Helper to generate a random group code
 function generateGroupCode() {
   return Math.random().toString(36).substr(2, 6).toUpperCase();
@@ -133,6 +136,42 @@ app.delete('/api/groups/:code/files/:filename', (req, res) => {
   } catch (e) {
     res.status(500).json({ error: 'Failed to delete file' });
   }
+});
+
+// Kick member from group (admin only)
+app.post('/api/groups/kick', (req, res) => {
+  const { code, member } = req.body;
+  if (!code || !member) return res.status(400).json({ error: 'Missing code or member' });
+  const group = groups[code];
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  const creator = group.members[0];
+  // Only creator can kick, and cannot kick themselves
+  if (req.body.requester !== creator || member === creator) return res.status(403).json({ error: 'Not allowed' });
+  group.members = group.members.filter(u => u !== member);
+  if (userGroups[member]) userGroups[member] = userGroups[member].filter(c => c !== code);
+  res.json({ success: true });
+});
+
+// Add a comment to a file
+app.post('/api/groups/:code/files/:filename/comments', (req, res) => {
+  const groupCode = req.params.code;
+  const filename = req.params.filename;
+  const { username, text } = req.body;
+  if (!groups[groupCode]) return res.status(404).json({ error: 'Group not found' });
+  if (!username || !text) return res.status(400).json({ error: 'Missing username or text' });
+  if (!groupFilesComments[groupCode]) groupFilesComments[groupCode] = {};
+  if (!groupFilesComments[groupCode][filename]) groupFilesComments[groupCode][filename] = [];
+  groupFilesComments[groupCode][filename].push({ username, text, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Get comments for a file
+app.get('/api/groups/:code/files/:filename/comments', (req, res) => {
+  const groupCode = req.params.code;
+  const filename = req.params.filename;
+  if (!groups[groupCode]) return res.status(404).json({ error: 'Group not found' });
+  const comments = (groupFilesComments[groupCode] && groupFilesComments[groupCode][filename]) || [];
+  res.json({ comments });
 });
 
 app.listen(PORT, () => {
