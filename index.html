@@ -26,6 +26,28 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
       }
+      .glassmorphism {
+        position: relative;
+        border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25), 0 1.5px 4px 0 rgba(255,255,255,0.10) inset;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        overflow: hidden;
+        border-radius: 1.5rem !important;
+      }
+      .glassmorphism::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.18) 100%);
+        pointer-events: none;
+        z-index: 0;
+        border-radius: inherit;
+      }
+      .glassmorphism > * {
+        position: relative;
+        z-index: 1;
+      }
     </style>
   </head>
   <body>
@@ -51,24 +73,25 @@
               </svg>
             </div>
             <h2
-              class="text-white text-lg font-bold leading-tight tracking-[-0.015em]"
+              class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex items-center gap-2"
             >
               MindZero
+              <span class="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-[#fbbf24] to-[#f472b6] text-black shadow-md border border-[#fff3]" style="letter-spacing:0.05em;">BETA</span>
             </h2>
           </div>
           <!-- Hamburger for mobile -->
-          <button id="mobile-menu-btn" class="sm:hidden absolute right-4 top-4 text-white focus:outline" aria-label="Open menu">
+          <button id="mobile-menu-btn" class="glassmorphism sm:hidden absolute right-4 top-4 text-white focus:outline" aria-label="Open menu">
             <i class="fas fa-bars text-2xl"></i>
           </button>
           <!-- Desktop Nav/Profile -->
           <div id="desktop-nav" class="hidden sm:flex flex-col sm:flex-row flex-1 justify-end gap-4 sm:gap-8 w-full sm:w-auto">
             <div class="flex items-center gap-4 sm:gap-9">
               <a class="text-white text-sm font-medium leading-normal" href="#">Home</a>
-              <button id="create-group-btn" title="Create Group" class="group bg-gradient-to-r from-[#06d6a0] to-[#38bdf8] hover:from-[#38bdf8] hover:to-[#06d6a0] text-black rounded-full px-2 py-1 text-sm font-bold shadow-md transition flex items-center justify-center relative">
+              <button id="create-group-btn" title="Create Group" class="glassmorphism group bg-gradient-to-r from-[#06d6a0] to-[#38bdf8] hover:from-[#38bdf8] hover:to-[#06d6a0] text-black rounded-full px-2 py-1 text-sm font-bold shadow-md transition flex items-center justify-center relative">
                 <i class="fas fa-users text-base mr-1"></i>
                 <span class="font-semibold">Create Group</span>
               </button>
-              <button id="join-group-btn" title="Join Group" class="group bg-gradient-to-r from-[#4f8cff] to-[#a78bfa] hover:from-[#a78bfa] hover:to-[#4f8cff] text-black rounded-full px-2 py-1 text-sm font-bold shadow-md transition flex items-center justify-center relative">
+              <button id="join-group-btn" title="Join Group" class="glassmorphism group bg-gradient-to-r from-[#4f8cff] to-[#a78bfa] hover:from-[#a78bfa] hover:to-[#4f8cff] text-black rounded-full px-2 py-1 text-sm font-bold shadow-md transition flex items-center justify-center relative">
                 <i class="fas fa-user-plus text-base mr-1"></i>
                 <span class="font-semibold">Join Group</span>
               </button>
@@ -92,11 +115,11 @@
             <div class="flex flex-col gap-4">
               <a class="text-white text-sm font-medium leading-normal" href="#">Home</a>
               <div class="flex gap-2 flex-col">
-                <button id="create-group-btn-mobile" title="Create Group" class="group bg-gradient-to-r from-[#06d6a0] to-[#38bdf8] hover:from-[#38bdf8] hover:to-[#06d6a0] text-black rounded-full px-2 py-1 text-sm font-bold shadow-md transition flex items-center justify-center relative w-full">
+                <button id="create-group-btn-mobile" title="Create Group" class="glassmorphism group bg-gradient-to-r from-[#06d6a0] to-[#38bdf8] hover:from-[#38bdf8] hover:to-[#06d6a0] text-black rounded-full px-2 py-1 text-sm font-bold shadow-md transition flex items-center justify-center relative w-full">
                   <i class="fas fa-users text-base mr-1"></i>
                   <span class="font-semibold">Create Group</span>
                 </button>
-                <button id="join-group-btn-mobile" title="Join Group" class="group bg-gradient-to-r from-[#4f8cff] to-[#a78bfa] hover:from-[#a78bfa] hover:to-[#4f8cff] text-black rounded-full px-2 py-1 text-sm font-bold shadow-md transition flex items-center justify-center relative w-full">
+                <button id="join-group-btn-mobile" title="Join Group" class="glassmorphism group bg-gradient-to-r from-[#4f8cff] to-[#a78bfa] hover:from-[#a78bfa] hover:to-[#4f8cff] text-black rounded-full px-2 py-1 text-sm font-bold shadow-md transition flex items-center justify-center relative w-full">
                   <i class="fas fa-user-plus text-base mr-1"></i>
                   <span class="font-semibold">Join Group</span>
                 </button>
@@ -131,7 +154,7 @@
             </div>
             <div class="flex px-2 sm:px-4 py-3 justify-start">
               <!-- Upload File -->
-              <button id="upload-btn" class="bg-gradient-to-r from-[#4f8cff] via-[#38bdf8] to-[#06d6a0] hover:from-[#2563eb] hover:to-[#06d6a0] text-black rounded-full h-10 px-4 gap-2 pl-4 text-sm font-bold shadow-md transition w-full sm:w-auto flex items-center justify-center">
+              <button id="upload-btn" class="glassmorphism bg-gradient-to-r from-[#4f8cff] via-[#38bdf8] to-[#06d6a0] hover:from-[#2563eb] hover:to-[#06d6a0] text-black rounded-full h-10 px-4 gap-2 pl-4 text-sm font-bold shadow-md transition w-full sm:w-auto flex items-center justify-center">
                 <div class="text-white" data-icon="Upload" data-size="20px" data-weight="regular">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
                     <path d="M240,136v64a16,16,0,0,1-16,16H32a16,16,0,0,1-16-16V136a16,16,0,0,1,16-16H80a8,8,0,0,1,0,16H32v64H224V136H176a8,8,0,0,1,0-16h48A16,16,0,0,1,240,136ZM85.66,77.66,120,43.31V128a8,8,0,0,0,16,0V43.31l34.34,34.35a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,85.66,77.66ZM200,168a12,12,0,1,0-12,12A12,12,0,0,0,200,168Z"></path>
@@ -149,12 +172,32 @@
               <h3 class="text-white text-base font-bold mb-2">Group Files</h3>
               <div id="group-members-info" class="mb-2"></div>
               <form id="group-file-upload-form" class="flex flex-col gap-2 mb-3 items-start">
+                <div class="w-full flex flex-col gap-2 mb-2">
+                  <label class="text-[#4f8cff] font-semibold text-sm">Create New Folder</label>
+                  <div class="flex gap-2 w-full">
+                    <input id="group-new-folder-name" type="text" placeholder="Folder name" class="rounded-md border border-[#283039] bg-[#232a36] text-white px-3 py-2 focus:outline-none focus:border-[#4f8cff] placeholder:text-[#9cabba] flex-1" />
+                    <button id="group-create-folder-btn" type="button" class="glassmorphism bg-gradient-to-r from-[#06d6a0] to-[#38bdf8] text-black rounded px-4 py-2 font-bold">Create</button>
+                  </div>
+                  <div id="group-folder-feedback" class="text-xs text-[#06d6a0] mt-1"></div>
+                </div>
+                <div class="w-full flex flex-col gap-2 mb-2">
+                  <label class="text-[#4f8cff] font-semibold text-sm">Select Folder</label>
+                  <select id="group-folder-select" class="rounded-md border border-[#283039] bg-[#232a36] text-white px-3 py-2 focus:outline-none focus:border-[#4f8cff]">
+                    <option value="">(No Folder)</option>
+                  </select>
+                </div>
                 <label for="group-file-input" id="group-file-drop" class="w-full flex flex-col items-center justify-center border-2 border-dashed border-[#4f8cff] rounded-lg p-4 cursor-pointer hover:bg-[#181c23] transition">
                   <span class="text-[#4f8cff] font-semibold mb-2"><i class="fas fa-cloud-upload-alt mr-2"></i>Drag & Drop or Click to Select File</span>
                   <span id="group-file-selected" class="text-[#9cabba] text-xs mt-2"></span>
                 </label>
                 <input id="group-file-input" type="file" class="hidden" />
-                <button type="submit" class="bg-gradient-to-r from-[#4f8cff] to-[#06d6a0] text-black rounded px-4 py-2 font-bold mt-2">Upload</button>
+                <label class="w-full flex flex-col items-center justify-center mt-2">
+                  <span class="text-[#4f8cff] font-semibold mb-2"><i class="fas fa-folder-open mr-2"></i>Or Upload Entire Folder</span>
+                  <input id="group-folder-upload-input" type="file" webkitdirectory directory multiple class="block text-white" style="display:none;" />
+                  <button id="group-folder-upload-btn" type="button" class="glassmorphism bg-gradient-to-r from-[#4f8cff] to-[#06d6a0] text-black rounded px-4 py-2 font-bold mt-2">Select Folder to Upload</button>
+                  <span id="group-folder-upload-selected" class="text-[#9cabba] text-xs mt-2"></span>
+                </label>
+                <button type="submit" class="glassmorphism bg-gradient-to-r from-[#4f8cff] to-[#06d6a0] text-black rounded px-4 py-2 font-bold mt-2">Upload</button>
                 <div id="group-file-upload-feedback" class="text-xs text-[#06d6a0] mt-1"></div>
               </form>
               <div id="group-files-list" class="flex flex-col gap-2"></div>
@@ -166,8 +209,8 @@
                 <h2 class="text-white text-lg font-bold">Create Group</h2>
                 <input id="create-group-name" type="text" placeholder="Group Name" class="rounded-md border border-[#283039] bg-[#232a36] text-white px-3 py-2 focus:outline-none focus:border-[#4f8cff] placeholder:text-[#9cabba]" />
                 <div class="flex gap-2 justify-end">
-                  <button id="create-group-cancel" class="px-4 py-2 rounded bg-[#283039] text-white">Cancel</button>
-                  <button id="create-group-confirm" class="px-4 py-2 rounded bg-gradient-to-r from-[#06d6a0] to-[#38bdf8] text-black font-bold">Create</button>
+                  <button id="create-group-cancel" class="glassmorphism px-4 py-2 rounded bg-[#283039] text-white">Cancel</button>
+                  <button id="create-group-confirm" class="glassmorphism px-4 py-2 rounded bg-gradient-to-r from-[#06d6a0] to-[#38bdf8] text-black font-bold">Create</button>
                 </div>
                 <div id="create-group-result" class="text-xs text-[#06d6a0] mt-2"></div>
               </div>
@@ -178,8 +221,8 @@
                 <h2 class="text-white text-lg font-bold">Join Group</h2>
                 <input id="join-group-code" type="text" placeholder="Group Code" class="rounded-md border border-[#283039] bg-[#232a36] text-white px-3 py-2 focus:outline-none focus:border-[#4f8cff] placeholder:text-[#9cabba]" />
                 <div class="flex gap-2 justify-end">
-                  <button id="join-group-cancel" class="px-4 py-2 rounded bg-[#283039] text-white">Cancel</button>
-                  <button id="join-group-confirm" class="px-4 py-2 rounded bg-gradient-to-r from-[#4f8cff] to-[#a78bfa] text-black font-bold">Join</button>
+                  <button id="join-group-cancel" class="glassmorphism px-4 py-2 rounded bg-[#283039] text-white">Cancel</button>
+                  <button id="join-group-confirm" class="glassmorphism px-4 py-2 rounded bg-gradient-to-r from-[#4f8cff] to-[#a78bfa] text-black font-bold">Join</button>
                 </div>
                 <div id="join-group-result" class="text-xs text-[#06d6a0] mt-2"></div>
               </div>
@@ -193,16 +236,16 @@
               </p>
               <div class="flex items-center gap-3">
                 <!-- Save -->
-                <button id="save-btn" disabled class="bg-gradient-to-r from-[#06d6a0] via-[#38bdf8] to-[#4f8cff] hover:from-[#06d6a0] hover:to-[#2563eb] text-black rounded-full px-4 py-2 font-bold shadow-md transition flex items-center gap-2">
+                <button id="save-btn" disabled class="glassmorphism bg-gradient-to-r from-[#06d6a0] via-[#38bdf8] to-[#4f8cff] hover:from-[#06d6a0] hover:to-[#2563eb] text-black rounded-full px-4 py-2 font-bold shadow-md transition flex items-center gap-2">
                   <i class="fas fa-save"></i> Save
                 </button>
                 <!-- Edit -->
-                <button id="edit-btn" disabled class="bg-gradient-to-r from-[#f472b6] to-[#be185d] hover:from-[#be185d] hover:to-[#f472b6] text-bl rounded-full px-4 py-2 font-bold shadow-md transition flex items-center gap-2">
+                <button id="edit-btn" disabled class="glassmorphism bg-gradient-to-r from-[#f472b6] to-[#be185d] hover:from-[#be185d] hover:to-[#f472b6] text-bl rounded-full px-4 py-2 font-bold shadow-md transition flex items-center gap-2">
                   <i class="fas fa-edit"></i> Edit
                   
                 </button>
                 <!-- Download -->
-                <button id="download-btn" disabled class="bg-gradient-to-r from-[#a78bfa] via-[#f472b6] to-[#fbbf24] hover:from-[#a78bfa] hover:to-[#f59e42] text-black rounded-full px-4 py-2 font-bold shadow-md transition flex items-center gap-2">
+                <button id="download-btn" disabled class="glassmorphism bg-gradient-to-r from-[#a78bfa] via-[#f472b6] to-[#fbbf24] hover:from-[#a78bfa] hover:to-[#f59e42] text-black rounded-full px-4 py-2 font-bold shadow-md transition flex items-center gap-2">
                   <i class="fas fa-download"></i> Download
                 </button>
               </div>
@@ -244,7 +287,7 @@
             <a href="https://github.com/" target="_blank" class="text-[#9cabba] hover:text-white text-xl transition flex items-center gap-1" aria-label="GitHub">
               <i class="fab fa-github"></i>
             </a>
-            <a href="mailto:support@mindzero.com" class="text-[#9cabba] hover:text-white text-xl transition flex items-center gap-1" aria-label="Email">
+            <a href="mailto:roumo12345@gmail.com" class="text-[#9cabba] hover:text-white text-xl transition flex items-center gap-1" aria-label="Email">
               <i class="fas fa-envelope"></i>
             </a>
           </div>

@@ -777,7 +777,80 @@ document.addEventListener('DOMContentLoaded', function() {
     const groupFileDrop = document.getElementById('group-file-drop');
     const groupFileSelected = document.getElementById('group-file-selected');
     const groupFileUploadFeedback = document.getElementById('group-file-upload-feedback');
+    const groupNewFolderName = document.getElementById('group-new-folder-name');
+    const groupCreateFolderBtn = document.getElementById('group-create-folder-btn');
+    const groupFolderFeedback = document.getElementById('group-folder-feedback');
+    const groupFolderSelect = document.getElementById('group-folder-select');
+    const groupFolderUploadInput = document.getElementById('group-folder-upload-input');
+    const groupFolderUploadBtn = document.getElementById('group-folder-upload-btn');
+    const groupFolderUploadSelected = document.getElementById('group-folder-upload-selected');
     let selectedGroupCode = null;
+    let groupFolders = [];
+
+    function loadGroupFolders() {
+        // Load folders from localStorage (per group) or initialize
+        if (!selectedGroupCode) return;
+        const key = `groupFolders_${selectedGroupCode}`;
+        const data = localStorage.getItem(key);
+        groupFolders = data ? JSON.parse(data) : [];
+        renderGroupFolderSelect();
+    }
+
+    function saveGroupFolders() {
+        if (!selectedGroupCode) return;
+        const key = `groupFolders_${selectedGroupCode}`;
+        localStorage.setItem(key, JSON.stringify(groupFolders));
+    }
+
+    function renderGroupFolderSelect() {
+        if (!groupFolderSelect) return;
+        groupFolderSelect.innerHTML = '<option value="">(No Folder)</option>';
+        groupFolders.forEach(folder => {
+            const opt = document.createElement('option');
+            opt.value = folder;
+            opt.textContent = folder;
+            groupFolderSelect.appendChild(opt);
+        });
+    }
+
+    if (groupCreateFolderBtn) {
+        groupCreateFolderBtn.addEventListener('click', () => {
+            const name = groupNewFolderName.value.trim();
+            if (!name) {
+                groupFolderFeedback.textContent = 'Folder name required.';
+                return;
+            }
+            if (groupFolders.includes(name)) {
+                groupFolderFeedback.textContent = 'Folder already exists.';
+                return;
+            }
+            groupFolders.push(name);
+            saveGroupFolders();
+            renderGroupFolderSelect();
+            groupNewFolderName.value = '';
+            groupFolderFeedback.textContent = 'Folder created!';
+            setTimeout(() => groupFolderFeedback.textContent = '', 1500);
+        });
+    }
+
+    if (groupFolderSelect) {
+        groupFolderSelect.addEventListener('change', () => {
+            // Optionally, update UI or feedback
+        });
+    }
+
+    if (groupFolderUploadBtn && groupFolderUploadInput) {
+        groupFolderUploadBtn.addEventListener('click', () => {
+            groupFolderUploadInput.click();
+        });
+        groupFolderUploadInput.addEventListener('change', () => {
+            if (groupFolderUploadInput.files.length) {
+                groupFolderUploadSelected.textContent = `${groupFolderUploadInput.files.length} files selected from folder.`;
+            } else {
+                groupFolderUploadSelected.textContent = '';
+            }
+        });
+    }
 
     // Drag-and-drop for file upload
     if (groupFileDrop && groupFileInput) {
@@ -811,12 +884,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function selectGroup(code) {
         selectedGroupCode = code;
         if (groupFilesSection) groupFilesSection.classList.remove('hidden');
+        loadGroupFolders();
         fetchAndRenderGroupFiles();
     }
     // Hide files section
     function deselectGroup() {
         selectedGroupCode = null;
         if (groupFilesSection) groupFilesSection.classList.add('hidden');
+        groupFolders = [];
+        renderGroupFolderSelect();
     }
     // Fetch and render files for selected group
     async function fetchAndRenderGroupFiles() {
@@ -882,10 +958,50 @@ document.addEventListener('DOMContentLoaded', function() {
             const res = await fetch(`${API_BASE}/${selectedGroupCode}/files`);
             const data = await res.json();
             if (res.ok && data.files && data.files.length > 0) {
-                groupFilesList.innerHTML = '';
-                data.files.forEach(file => {
-                    const div = document.createElement('div');
-                    div.className = 'flex flex-col bg-[#232a36] rounded px-3 py-2 mb-2';
+                // --- Build a nested folder tree ---
+                function buildTree(files) {
+                    const root = {};
+                    files.forEach(file => {
+                        const parts = (file.folder || '').split('/').filter(Boolean);
+                        let node = root;
+                        for (const part of parts) {
+                            if (!node[part]) node[part] = { _isFolder: true, _children: {} };
+                            node = node[part]._children;
+                        }
+                        if (!node._files) node._files = [];
+                        node._files.push(file);
+                    });
+                    return root;
+                }
+                // --- Render the tree as HTML ---
+                function renderTree(node, parentPath = '') {
+                    let html = '';
+                    for (const key in node) {
+                        if (key === '_files') continue;
+                        if (node[key]._isFolder) {
+                            const folderId = `folder-${parentPath.replace(/\//g, '-')}-${key}`;
+                            html += `<div class="ml-2">
+                                <div class="flex items-center cursor-pointer folder-toggle" data-folder-id="${folderId}">
+                                    <i class="fas fa-folder mr-2 text-[#fbbf24]"></i>
+                                    <span class="text-[#fbbf24] font-bold">${key}</span>
+                                    <i class="fas fa-chevron-down ml-1 text-xs transition-transform"></i>
+                                </div>
+                                <div class="folder-children" id="${folderId}" style="display:none;">
+                                    ${renderTree(node[key]._children, parentPath ? parentPath + '/' + key : key)}
+                                </div>
+                            </div>`;
+                        }
+                    }
+                    // Render files at this level
+                    if (node._files) {
+                        node._files.forEach(file => {
+                            html += renderFileItem(file);
+                        });
+                    }
+                    return html;
+                }
+                // --- Render a file item ---
+                function renderFileItem(file) {
                     // File preview logic
                     let preview = '';
                     const ext = file.originalname.split('.').pop().toLowerCase();
@@ -906,7 +1022,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     // Comments section placeholder
                     const commentsSectionId = `comments-section-${file.filename.replace(/[^a-zA-Z0-9]/g, '')}`;
-                    div.innerHTML = `
+                    return `<div class='flex flex-col bg-[#232a36] rounded px-3 py-2 mb-2 ml-6'>
                         <div class='flex items-center justify-between'>
                             <div class="flex flex-col">
                                 <span class="text-white font-normal">${file.originalname}</span>
@@ -920,19 +1036,35 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         ${preview}
                         <div id="${commentsSectionId}" class="mt-2 bg-[#181c23] rounded p-2"></div>
-                    `;
-                    groupFilesList.appendChild(div);
-                    // Render comments section
-                    renderCommentsSection(selectedGroupCode, file.filename, commentsSectionId);
+                    </div>`;
+                }
+                // --- Render the tree ---
+                const tree = buildTree(data.files);
+                groupFilesList.innerHTML = renderTree(tree);
+                // --- Folder expand/collapse logic ---
+                groupFilesList.querySelectorAll('.folder-toggle').forEach(toggle => {
+                    toggle.addEventListener('click', function() {
+                        const folderId = this.getAttribute('data-folder-id');
+                        const children = document.getElementById(folderId);
+                        if (children) {
+                            const icon = this.querySelector('.fa-chevron-down');
+                            if (children.style.display === 'none') {
+                                children.style.display = 'block';
+                                if (icon) icon.style.transform = 'rotate(180deg)';
+                            } else {
+                                children.style.display = 'none';
+                                if (icon) icon.style.transform = 'rotate(0deg)';
+                            }
+                        }
+                    });
                 });
-                // Download listeners
+                // --- File actions (download, delete, preview, comments) ---
                 groupFilesList.querySelectorAll('.download-group-file-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const filename = btn.getAttribute('data-filename');
                         window.open(`${API_BASE}/${selectedGroupCode}/files/${filename}`);
                     });
                 });
-                // Delete listeners
                 groupFilesList.querySelectorAll('.delete-group-file-btn').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
                         const filename = btn.getAttribute('data-filename');
@@ -950,7 +1082,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
                 });
-                // Preview listeners for all previewable files
                 groupFilesList.querySelectorAll('.show-preview-btn').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
                         const filename = btn.getAttribute('data-filename');
@@ -976,6 +1107,128 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
                 });
+                // --- Comments section ---
+                data.files.forEach(file => {
+                    const commentsSectionId = `comments-section-${file.filename.replace(/[^a-zA-Z0-9]/g, '')}`;
+                    renderCommentsSection(selectedGroupCode, file.filename, commentsSectionId);
+                });
+                // Folder right-click
+                groupFilesList.querySelectorAll('.folder-toggle').forEach(toggle => {
+                    toggle.addEventListener('contextmenu', function(e) {
+                        e.preventDefault();
+                        const folderPath = this.getAttribute('data-folder-path');
+                        showContextMenu(e.pageX, e.pageY, [
+                            { label: 'Rename Folder', action: async () => {
+                                const newName = prompt('Enter new folder name:', folderPath.split('/').pop());
+                                if (newName && newName.trim() && newName !== folderPath.split('/').pop()) {
+                                    const parentPath = folderPath.includes('/') ? folderPath.substring(0, folderPath.lastIndexOf('/')) : '';
+                                    const toFolder = parentPath ? parentPath + '/' + newName.trim() : newName.trim();
+                                    try {
+                                        const res = await fetch(`${API_BASE}/${selectedGroupCode}/folders/rename`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ fromFolder: folderPath, toFolder })
+                                        });
+                                        if (res.ok) fetchAndRenderGroupFiles();
+                                        else alert('Failed to rename folder');
+                                    } catch (e) { alert('Network error'); }
+                                }
+                            } },
+                            { label: 'Delete Folder', action: async () => {
+                                if (confirm('Delete folder and all its files?')) {
+                                    try {
+                                        const res = await fetch(`${API_BASE}/${selectedGroupCode}/folders/delete`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ folder: folderPath })
+                                        });
+                                        if (res.ok) fetchAndRenderGroupFiles();
+                                        else alert('Failed to delete folder');
+                                    } catch (e) { alert('Network error'); }
+                                }
+                            } },
+                            { label: 'New Folder', action: async () => {
+                                const folderName = prompt('Enter new folder name:');
+                                if (folderName && folderName.trim()) {
+                                    try {
+                                        const res = await fetch(`${API_BASE}/${selectedGroupCode}/folders/create`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ parentFolder: folderPath, folderName: folderName.trim() })
+                                        });
+                                        if (res.ok) fetchAndRenderGroupFiles();
+                                        else alert('Failed to create folder');
+                                    } catch (e) { alert('Network error'); }
+                                }
+                            } }
+                        ]);
+                    });
+                });
+                // File right-click
+                groupFilesList.querySelectorAll('.file-row').forEach(row => {
+                    row.addEventListener('contextmenu', function(e) {
+                        e.preventDefault();
+                        const filename = this.getAttribute('data-filename');
+                        showContextMenu(e.pageX, e.pageY, [
+                            { label: 'Download', action: () => window.open(`${API_BASE}/${selectedGroupCode}/files/${filename}`) },
+                            { label: 'Delete', action: async () => {
+                                if (confirm('Delete this file?')) {
+                                    try {
+                                        const res = await fetch(`${API_BASE}/${selectedGroupCode}/files/${filename}`, { method: 'DELETE' });
+                                        if (res.ok) fetchAndRenderGroupFiles();
+                                    } catch (e) {}
+                                }
+                            } },
+                            { label: 'Rename', action: async () => {
+                                const newName = prompt('Enter new file name (with extension):');
+                                if (newName && newName.trim()) {
+                                    try {
+                                        const res = await fetch(`${API_BASE}/${selectedGroupCode}/files/rename`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ filename, newName: newName.trim() })
+                                        });
+                                        if (res.ok) fetchAndRenderGroupFiles();
+                                        else alert('Failed to rename file');
+                                    } catch (e) { alert('Network error'); }
+                                }
+                            } }
+                        ]);
+                    });
+                });
+                // --- Drag-and-drop for files (frontend only) ---
+                let draggedFile = null;
+                groupFilesList.querySelectorAll('.file-item').forEach(item => {
+                    item.addEventListener('dragstart', function(e) {
+                        draggedFile = {
+                            filename: this.getAttribute('data-filename'),
+                            fromFolder: this.getAttribute('data-folder')
+                        };
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+                });
+                groupFilesList.querySelectorAll('.folder-toggle').forEach(toggle => {
+                    toggle.addEventListener('dragover', function(e) {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                    });
+                    toggle.addEventListener('drop', async function(e) {
+                        e.preventDefault();
+                        const toFolder = this.getAttribute('data-folder-path');
+                        if (draggedFile && draggedFile.filename) {
+                            try {
+                                const res = await fetch(`${API_BASE}/${selectedGroupCode}/files/move`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ filename: draggedFile.filename, toFolder })
+                                });
+                                if (res.ok) fetchAndRenderGroupFiles();
+                                else alert('Failed to move file');
+                            } catch (e) { alert('Network error'); }
+                        }
+                        draggedFile = null;
+                    });
+                });
             } else {
                 groupFilesList.innerHTML = '<div class="text-[#9cabba]">No files in this group.</div>';
             }
@@ -988,15 +1241,46 @@ document.addEventListener('DOMContentLoaded', function() {
         groupFileUploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!selectedGroupCode) return;
+            // Folder-based upload logic
+            groupFileUploadFeedback.textContent = 'Uploading...';
+            const username = getUsername();
+            const selectedFolder = groupFolderSelect ? groupFolderSelect.value : '';
+            // If folder upload input has files, upload all
+            if (groupFolderUploadInput && groupFolderUploadInput.files.length) {
+                const filesArr = Array.from(groupFolderUploadInput.files);
+                let successCount = 0, failCount = 0;
+                for (const file of filesArr) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('username', username);
+                    // Use the folder structure from webkitRelativePath
+                    const relPath = file.webkitRelativePath || file.name;
+                    const folder = relPath.includes('/') ? relPath.split('/').slice(0, -1).join('/') : selectedFolder;
+                    formData.append('folder', folder);
+                    try {
+                        const res = await fetch(`${API_BASE}/${selectedGroupCode}/files`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        if (res.ok) successCount++; else failCount++;
+                    } catch (e) { failCount++; }
+                }
+                groupFileUploadFeedback.textContent = `Uploaded ${successCount} files, ${failCount} failed.`;
+                groupFolderUploadInput.value = '';
+                groupFolderUploadSelected.textContent = '';
+                fetchAndRenderGroupFiles();
+                return;
+            }
+            // Single file upload
             const file = groupFileInput.files[0];
             if (!file) {
                 groupFilesMessage.textContent = 'Please select a file.';
                 return;
             }
-            groupFileUploadFeedback.textContent = 'Uploading...';
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('username', getUsername());
+            formData.append('username', username);
+            formData.append('folder', selectedFolder);
             try {
                 const res = await fetch(`${API_BASE}/${selectedGroupCode}/files`, {
                     method: 'POST',
@@ -1006,7 +1290,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (res.ok) {
                     groupFileUploadFeedback.textContent = 'File uploaded!';
                     // Save to My Files (personal)
-                    const file = groupFileInput.files[0];
                     if (file) {
                         const reader = new FileReader();
                         reader.onload = function(evt) {
@@ -1033,9 +1316,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    // Deselect group if group list is empty or user leaves
-    // (Handled in fetchAndRenderGroups)
-
     // Render and handle comments for a file
     async function renderCommentsSection(groupCode, filename, sectionId) {
         const section = document.getElementById(sectionId);
