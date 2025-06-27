@@ -48,11 +48,54 @@
         position: relative;
         z-index: 1;
       }
+      /* Hide Spline watermark/tag */
+      spline-viewer::part(watermark) {
+        display: none !important;
+      }
+      spline-viewer a[target="_blank"],
+      spline-viewer .spline-watermark {
+        display: none !important;
+      }
+      .spline-bg {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        z-index: 0;
+        pointer-events: none;
+      }
+      .main-content {
+        position: relative;
+        z-index: 1;
+      }
+      /* Overlay to visually hide Spline watermark */
+      .spline-watermark-cover {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 160px;
+        height: 60px;
+        background: #000000;
+        z-index: 2;
+        border-radius: 16px 0 0 0;
+        pointer-events: none;
+        opacity: 0.9;
+        color: white;
+      }
+      .spline-bg-container {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        z-index: 0;
+        pointer-events: none;
+      }
     </style>
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.10.15/build/spline-viewer.js"></script>
   </head>
   <body>
+    <div class="spline-bg-container">
+      <spline-viewer class="spline-bg" url="https://prod.spline.design/4TGgZH5tnWzkQ7Eq/scene.splinecode"></spline-viewer>
+      <div class="spline-watermark-cover"></div>
+    </div>
     <div
-      class="relative flex min-h-screen flex-col bg-[#111418] dark group/design-root overflow-x-hidden"
+      class="main-content relative flex min-h-screen flex-col dark group/design-root overflow-x-hidden"
       style="font-family: Inter, 'Noto Sans', sans-serif"
     >
       <div class="layout-container flex flex-col h-full grow">
@@ -260,7 +303,21 @@
                   <span class="text-xs font-semibold text-[#4f8cff]">VIEW MODE</span>
                 </p>
                 <div class="h-[60vh]">
-                  <pre id="file-highlight" class="scrollbar-hide line-numbers rounded-lg bg-[#232a36] text-sm p-4 h-full overflow-y-auto whitespace-pre-wrap break-words mb-2" style="display:none;"><code class="language-none"></code></pre>
+                  <div id="preview-toggle-container" style="position: relative; height: 100%;">
+                    <button id="hide-preview-btn" title="Hide Preview"
+                      class="glassmorphism flex items-center gap-2 px-4 py-1.5 rounded-full text-[#4f8cff] font-bold text-xs shadow transition border border-[#4f8cff] hover:text-white hover:border-[#38bdf8]"
+                      style="position: absolute; top: 10px; right: 10px; z-index: 2; display: none;">
+                      <i class="fas fa-eye-slash"></i>
+                      <span>Hide PREVIEW</span>
+                    </button>
+                    <button id="show-preview-btn" title="Show Preview"
+                      class="glassmorphism flex items-center gap-2 px-4 py-1.5 rounded-full text-[#4f8cff] font-bold text-xs shadow transition border border-[#4f8cff] hover:text-white hover:border-[#38bdf8]"
+                      style="position: absolute; top: 10px; right: 10px; z-index: 2; display: none;">
+                      <i class="fas fa-eye"></i>
+                      <span>Show PREVIEW</span>
+                    </button>
+                    <pre id="file-highlight" class="scrollbar-hide line-numbers rounded-lg bg-[#232a36] text-sm p-4 h-full overflow-y-auto whitespace-pre-wrap break-words mb-2" style="display:none;"><code class="language-none"></code></pre>
+                  </div>
                   <textarea id="file-editor" class="form-input w-full h-full resize-none overflow-y-auto rounded-lg text-white focus:outline-0 focus:ring-0 border border-[#3b4754] bg-[#1b2127] focus:border-[#3b4754] placeholder:text-[#9cabba] p-[15px] text-base font-normal leading-normal font-mono"></textarea>
                 </div>
               </label>

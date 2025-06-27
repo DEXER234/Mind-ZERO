@@ -25,6 +25,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const joinGroupBtn = document.getElementById('join-group-btn');
     const createGroupBtnMobile = document.getElementById('create-group-btn-mobile');
     const joinGroupBtnMobile = document.getElementById('join-group-btn-mobile');
+    const hidePreviewBtn = document.getElementById('hide-preview-btn');
+    const showPreviewBtn = document.getElementById('show-preview-btn');
 
     // State variables
     let files = [];
@@ -39,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const USER_NAME_KEY = 'myFileManagerUserName';
     const USER_INFO_KEY = 'myFileManagerUserInfo';
     const USERNAME_KEY = 'myFileManagerUsername';
+    let previewHidden = false;
 
     // --- Local Storage Helpers ---
     function loadFiles() {
@@ -106,13 +109,19 @@ document.addEventListener('DOMContentLoaded', function() {
             editBtn.disabled = true;
             isEditMode = false;
             if (fileHighlight) fileHighlight.style.display = 'none';
-            if (fileEditor) fileEditor.style.display = 'flex';
+            if (fileEditor) fileEditor.style.display = 'none';
+            if (hidePreviewBtn) hidePreviewBtn.style.display = 'none';
+            if (showPreviewBtn) showPreviewBtn.style.display = 'none';
+            previewHidden = false;
         } else {
             fileEditor.disabled = !isEditMode;
             editBtn.disabled = isEditMode;
             if (isEditMode) {
                 if (fileHighlight) fileHighlight.style.display = 'none';
                 if (fileEditor) fileEditor.style.display = 'flex';
+                if (hidePreviewBtn) hidePreviewBtn.style.display = 'none';
+                if (showPreviewBtn) showPreviewBtn.style.display = 'none';
+                previewHidden = false;
             } else {
                 if (fileHighlight && fileHighlightCode) {
                     const file = files[currentFileIndex];
@@ -121,7 +130,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     fileHighlightCode.className = 'language-' + lang;
                     fileHighlightCode.textContent = file.content;
                     Prism.highlightElement(fileHighlightCode);
-                    fileHighlight.style.display = 'block';
+                    if (!previewHidden) {
+                        fileHighlight.style.display = 'block';
+                        if (hidePreviewBtn) hidePreviewBtn.style.display = 'block';
+                        if (showPreviewBtn) showPreviewBtn.style.display = 'none';
+                    } else {
+                        fileHighlight.style.display = 'none';
+                        if (hidePreviewBtn) hidePreviewBtn.style.display = 'none';
+                        if (showPreviewBtn) showPreviewBtn.style.display = 'block';
+                    }
                 }
                 if (fileEditor) fileEditor.style.display = 'none';
             }
@@ -158,9 +175,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     isRecent = true;
                 }
             }
-            let fileItemClass = 'file-item flex items-center gap-4 bg-[#111418] hover:bg-[#1a2129] px-4 min-h-14 justify-between cursor-pointer rounded-lg';
-            if (isRecent) fileItemClass += ' bg-[#073b4c]';
-            if (realIndex === currentFileIndex) fileItemClass += ' bg-[#283039]';
+            let fileItemClass = 'file-item flex items-center gap-4 px-4 min-h-14 justify-between cursor-pointer rounded-lg';
+            if (isRecent) fileItemClass += ' ring-2 ring-[#06d6a0]';
+            if (realIndex === currentFileIndex) fileItemClass += ' ring-2 ring-[#4f8cff]';
             fileItem.className = fileItemClass;
             fileItem.dataset.index = realIndex;
             // Get file extension for icon
@@ -1374,5 +1391,20 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             section.innerHTML = '<div class="text-[#e57373] text-xs">Network error.</div>';
         }
+    }
+
+    if (hidePreviewBtn && showPreviewBtn && fileHighlight) {
+        hidePreviewBtn.addEventListener('click', () => {
+            previewHidden = true;
+            fileHighlight.style.display = 'none';
+            hidePreviewBtn.style.display = 'none';
+            showPreviewBtn.style.display = 'block';
+        });
+        showPreviewBtn.addEventListener('click', () => {
+            previewHidden = false;
+            fileHighlight.style.display = 'block';
+            hidePreviewBtn.style.display = 'block';
+            showPreviewBtn.style.display = 'none';
+        });
     }
 });
