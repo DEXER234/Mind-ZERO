@@ -73,7 +73,13 @@ app.post('/api/groups/leave', (req, res) => {
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const groupCode = req.params.code;
-    const dir = path.join(__dirname, 'uploads', groupCode);
+    // Support nested folders
+    let folder = req.body.folder || '';
+    // Sanitize folder (prevent path traversal)
+    folder = folder.replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '');
+    const dir = folder
+      ? path.join(__dirname, 'uploads', groupCode, folder)
+      : path.join(__dirname, 'uploads', groupCode);
     fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
@@ -95,7 +101,8 @@ app.post('/api/groups/:code/files', upload.single('file'), (req, res) => {
     originalname: req.file.originalname,
     uploader: username,
     uploadDate: new Date().toISOString(),
-    size: req.file.size
+    size: req.file.size,
+    folder: req.body.folder || ''
   };
   groupFiles[groupCode].push(fileMeta);
   res.json({ success: true, file: fileMeta });
@@ -105,6 +112,7 @@ app.post('/api/groups/:code/files', upload.single('file'), (req, res) => {
 app.get('/api/groups/:code/files', (req, res) => {
   const groupCode = req.params.code;
   if (!groups[groupCode]) return res.status(404).json({ error: 'Group not found' });
+  // Always return folder info for each file
   res.json({ files: groupFiles[groupCode] || [] });
 });
 
@@ -113,7 +121,13 @@ app.get('/api/groups/:code/files/:filename', (req, res) => {
   const groupCode = req.params.code;
   const filename = req.params.filename;
   if (!groups[groupCode]) return res.status(404).json({ error: 'Group not found' });
-  const dir = path.join(__dirname, 'uploads', groupCode);
+  // Find the file's folder
+  const fileMeta = (groupFiles[groupCode] || []).find(f => f.filename === filename);
+  let folder = fileMeta && fileMeta.folder ? fileMeta.folder : '';
+  folder = folder.replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '');
+  const dir = folder
+    ? path.join(__dirname, 'uploads', groupCode, folder)
+    : path.join(__dirname, 'uploads', groupCode);
   const filePath = path.join(dir, filename);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
   res.download(filePath);
@@ -124,7 +138,13 @@ app.delete('/api/groups/:code/files/:filename', (req, res) => {
   const groupCode = req.params.code;
   const filename = req.params.filename;
   if (!groups[groupCode]) return res.status(404).json({ error: 'Group not found' });
-  const dir = path.join(__dirname, 'uploads', groupCode);
+  // Find the file's folder
+  const fileMeta = (groupFiles[groupCode] || []).find(f => f.filename === filename);
+  let folder = fileMeta && fileMeta.folder ? fileMeta.folder : '';
+  folder = folder.replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '');
+  const dir = folder
+    ? path.join(__dirname, 'uploads', groupCode, folder)
+    : path.join(__dirname, 'uploads', groupCode);
   const filePath = path.join(dir, filename);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
   try {
@@ -172,6 +192,131 @@ app.get('/api/groups/:code/files/:filename/comments', (req, res) => {
   if (!groups[groupCode]) return res.status(404).json({ error: 'Group not found' });
   const comments = (groupFilesComments[groupCode] && groupFilesComments[groupCode][filename]) || [];
   res.json({ comments });
+});
+
+// --- New: Move File to Another Folder ---
+app.post('/api/groups/:code/files/move', (req, res) => {
+  const groupCode = req.params.code;
+  const { filename, toFolder } = req.body;
+  if (!groups[groupCode]) return res.status(404).json({ error: 'Group not found' });
+  if (!filename) return res.status(400).json({ error: 'Missing filename' });
+  const fileMeta = (groupFiles[groupCode] || []).find(f => f.filename === filename);
+  if (!fileMeta) return res.status(404).json({ error: 'File not found' });
+  let fromFolder = fileMeta.folder || '';
+  let toFolderSan = (toFolder || '').replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '');
+  let fromFolderSan = fromFolder.replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '');
+  const fromDir = fromFolderSan
+    ? path.join(__dirname, 'uploads', groupCode, fromFolderSan)
+    : path.join(__dirname, 'uploads', groupCode);
+  const toDir = toFolderSan
+    ? path.join(__dirname, 'uploads', groupCode, toFolderSan)
+    : path.join(__dirname, 'uploads', groupCode);
+  fs.mkdirSync(toDir, { recursive: true });
+  const fromPath = path.join(fromDir, filename);
+  const toPath = path.join(toDir, filename);
+  if (!fs.existsSync(fromPath)) return res.status(404).json({ error: 'File not found on disk' });
+  try {
+    fs.renameSync(fromPath, toPath);
+    fileMeta.folder = toFolderSan;
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to move file' });
+  }
+});
+
+// --- New: Rename Folder ---
+app.post('/api/groups/:code/folders/rename', (req, res) => {
+  const groupCode = req.params.code;
+  const { fromFolder, toFolder } = req.body;
+  if (!groups[groupCode]) return res.status(404).json({ error: 'Group not found' });
+  if (!fromFolder || !toFolder) return res.status(400).json({ error: 'Missing folder names' });
+  let fromSan = fromFolder.replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '');
+  let toSan = toFolder.replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '');
+  const fromDir = path.join(__dirname, 'uploads', groupCode, fromSan);
+  const toDir = path.join(__dirname, 'uploads', groupCode, toSan);
+  if (!fs.existsSync(fromDir)) return res.status(404).json({ error: 'Source folder not found' });
+  try {
+    fs.mkdirSync(path.dirname(toDir), { recursive: true });
+    fs.renameSync(fromDir, toDir);
+    // Update metadata for all files in this folder and subfolders
+    (groupFiles[groupCode] || []).forEach(f => {
+      if (f.folder && (f.folder === fromSan || f.folder.startsWith(fromSan + '/'))) {
+        f.folder = f.folder.replace(fromSan, toSan);
+      }
+    });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to rename folder' });
+  }
+});
+
+// --- New: Delete Folder ---
+app.post('/api/groups/:code/folders/delete', (req, res) => {
+  const groupCode = req.params.code;
+  const { folder } = req.body;
+  if (!groups[groupCode]) return res.status(404).json({ error: 'Group not found' });
+  if (!folder) return res.status(400).json({ error: 'Missing folder name' });
+  let folderSan = folder.replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '');
+  const dir = path.join(__dirname, 'uploads', groupCode, folderSan);
+  if (!fs.existsSync(dir)) return res.status(404).json({ error: 'Folder not found' });
+  try {
+    // Recursively delete folder
+    fs.rmSync(dir, { recursive: true, force: true });
+    // Remove all files in this folder and subfolders from metadata
+    if (groupFiles[groupCode]) {
+      groupFiles[groupCode] = groupFiles[groupCode].filter(f => !(f.folder && (f.folder === folderSan || f.folder.startsWith(folderSan + '/'))));
+    }
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to delete folder' });
+  }
+});
+
+// --- New: Rename File ---
+app.post('/api/groups/:code/files/rename', (req, res) => {
+  const groupCode = req.params.code;
+  const { filename, newName } = req.body;
+  if (!groups[groupCode]) return res.status(404).json({ error: 'Group not found' });
+  if (!filename || !newName) return res.status(400).json({ error: 'Missing filename or newName' });
+  const fileMeta = (groupFiles[groupCode] || []).find(f => f.filename === filename);
+  if (!fileMeta) return res.status(404).json({ error: 'File not found' });
+  let folder = fileMeta.folder || '';
+  folder = folder.replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '');
+  const dir = folder
+    ? path.join(__dirname, 'uploads', groupCode, folder)
+    : path.join(__dirname, 'uploads', groupCode);
+  const oldPath = path.join(dir, filename);
+  // Keep the timestamp prefix, but change the original name
+  const newFilename = Date.now() + '-' + newName;
+  const newPath = path.join(dir, newFilename);
+  if (!fs.existsSync(oldPath)) return res.status(404).json({ error: 'File not found on disk' });
+  try {
+    fs.renameSync(oldPath, newPath);
+    fileMeta.filename = newFilename;
+    fileMeta.originalname = newName;
+    res.json({ success: true, file: fileMeta });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to rename file' });
+  }
+});
+
+// --- New: Create Folder ---
+app.post('/api/groups/:code/folders/create', (req, res) => {
+  const groupCode = req.params.code;
+  const { parentFolder, folderName } = req.body;
+  if (!groups[groupCode]) return res.status(404).json({ error: 'Group not found' });
+  if (!folderName) return res.status(400).json({ error: 'Missing folderName' });
+  let parentSan = parentFolder ? parentFolder.replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '') : '';
+  let folderSan = folderName.replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '');
+  const dir = parentSan
+    ? path.join(__dirname, 'uploads', groupCode, parentSan, folderSan)
+    : path.join(__dirname, 'uploads', groupCode, folderSan);
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to create folder' });
+  }
 });
 
 app.listen(PORT, () => {
