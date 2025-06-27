@@ -1058,6 +1058,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // --- Render the tree ---
                 const tree = buildTree(data.files);
                 groupFilesList.innerHTML = renderTree(tree);
+                window.lastGroupFilesList = data.files;
                 // --- Folder expand/collapse logic ---
                 groupFilesList.querySelectorAll('.folder-toggle').forEach(toggle => {
                     toggle.addEventListener('click', function() {
@@ -1102,17 +1103,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 groupFilesList.querySelectorAll('.show-preview-btn').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
                         const filename = btn.getAttribute('data-filename');
+                        // Find the file object from the rendered files (by filename)
+                        let fileObj = null;
+                        // Try to find the file object in the current group files list
+                        const allFiles = (window.lastGroupFilesList || []);
+                        fileObj = allFiles.find(f => f.filename === filename);
                         const previewContainer = btn.nextElementSibling;
+                        let url = `${API_BASE}/${selectedGroupCode}/files/${filename}`;
+                        if (fileObj && fileObj.folder) {
+                            url += `?folder=${encodeURIComponent(fileObj.folder)}`;
+                        }
                         if (previewContainer.classList.contains('hidden')) {
                             if (previewContainer.tagName === 'PRE') {
                                 previewContainer.textContent = 'Loading...';
                                 try {
-                                    const res = await fetch(`${API_BASE}/${selectedGroupCode}/files/${filename}`);
+                                    const res = await fetch(url);
                                     if (res.ok) {
                                         const text = await res.text();
                                         previewContainer.textContent = text.slice(0, 2000) + (text.length > 2000 ? '\n... (truncated)' : '');
                                     } else {
-                                        previewContainer.textContent = 'Preview failed.';
+                                        const error = await res.text();
+                                        previewContainer.textContent = `Preview failed: ${res.status} ${error}`;
                                     }
                                 } catch (e) {
                                     previewContainer.textContent = 'Network error.';
