@@ -120,13 +120,14 @@ app.get('/api/groups/:code/files', (req, res) => {
 app.get('/api/groups/:code/files/:filename', (req, res) => {
   const groupCode = req.params.code;
   const filename = req.params.filename;
+  const folder = req.query.folder || '';
   if (!groups[groupCode]) return res.status(404).json({ error: 'Group not found' });
   // Find the file's folder
-  const fileMeta = (groupFiles[groupCode] || []).find(f => f.filename === filename);
-  let folder = fileMeta && fileMeta.folder ? fileMeta.folder : '';
-  folder = folder.replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '');
-  const dir = folder
-    ? path.join(__dirname, 'uploads', groupCode, folder)
+  const fileMeta = (groupFiles[groupCode] || []).find(f => f.filename === filename && (folder ? f.folder === folder : true));
+  let folderPath = fileMeta && fileMeta.folder ? fileMeta.folder : '';
+  folderPath = folderPath.replace(/\\/g, '/').replace(/\.\./g, '').replace(/^\//, '').replace(/\/$/, '');
+  const dir = folderPath
+    ? path.join(__dirname, 'uploads', groupCode, folderPath)
     : path.join(__dirname, 'uploads', groupCode);
   const filePath = path.join(dir, filename);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
